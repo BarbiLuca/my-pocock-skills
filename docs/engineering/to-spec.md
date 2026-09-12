@@ -4,6 +4,8 @@
 
 It does not interview you. By the time you reach for it the deciding is already done, so it synthesises what is known (from the thread, from the codebase, from your `CONTEXT.md` and ADRs) rather than opening a fresh round of questions. The spec is a record of decisions already made, not a place where new ones get made.
 
+The issue title, headings, user stories, and decision prose are written in Italian, even from an English conversation. This applies to drafts and both local and remote trackers; technical identifiers, canonical domain terms, and tracker metadata retain their original spelling.
+
 ## When to reach for it
 
 You invoke this by typing `/to-spec`; the [agent](https://www.aihero.dev/ai-coding-dictionary/agent) won't reach for it on its own.

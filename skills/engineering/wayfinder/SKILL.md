@@ -8,6 +8,10 @@ A loose idea has arrived, too big for one agent session, and wrapped in fog: the
 
 The destination varies per effort, and naming it is the first act of charting: it shapes every ticket. It might be a spec to hand off and iterate on, a decision to lock before planning starts, or a change made in place like a data-structure migration. The map is domain-agnostic: engineering work, course content, whatever fits the shape.
 
+## Ticket language
+
+Write map and child-ticket titles, bodies, and resolution comments in Italian, including section headings and later updates, even when source material is in English. This applies to drafts and published issues, including local Markdown files. The English templates and section names below define the structure; render their prose and headings in Italian. Preserve code, identifiers, URLs, exact quotations, technical terms, and the project's canonical domain vocabulary. Keep tracker labels and machine-readable field names and values unchanged. Include this language rule in research subagent briefs when they write ticket content.
+
 ## Plan, don't do
 
 Wayfinder is **planning** by default: each ticket resolves a decision, and the map is done when the way is clear, with nothing left to decide before someone goes and does the thing. The pull to just do the work is usually the signal you've reached the edge of the map and it's time to hand off. An effort can override this in its **Notes**, carrying execution into the map itself, but absent that, produce decisions, not deliverables.
