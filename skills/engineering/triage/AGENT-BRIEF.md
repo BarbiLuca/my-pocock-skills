@@ -38,6 +38,8 @@ State what is out of scope. This prevents the agent from gold-plating or making 
 
 ## Template
 
+Apply the [ticket language rule](SKILL.md#ticket-language) to this template and the examples below when writing a brief.
+
 ```markdown
 ## Agent Brief
 

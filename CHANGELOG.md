@@ -1,5 +1,11 @@
 # mattpocock-skills
 
+## Unreleased
+
+### Changed
+
+- Write ticket content in Italian in `to-spec`, `to-tickets`, and `wayfinder`, including drafts, local Markdown tickets, and resolution comments. Write `triage` briefs, notes, and comments in Italian too. Preserve technical identifiers, canonical domain vocabulary, and tracker metadata.
+
 ## 1.2.3
 
 ### Patch Changes

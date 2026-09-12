@@ -10,6 +10,8 @@ You don't remember every skill, so ask.
 
 A **flow** is a path through the skills. Most paths run along one **main flow**, and two **on-ramps** merge onto it. Everything else is standalone, or a vocabulary layer that runs underneath.
 
+`/to-spec`, `/to-tickets`, and `/wayfinder` produce ticket content in Italian; `/triage` writes its briefs and comments in Italian too. This covers local Markdown and remote trackers, while preserving technical identifiers and tracker metadata.
+
 ## The main flow: idea → ship
 
 The route most work travels. You have an idea and want it built.

@@ -4,6 +4,8 @@
 
 It recommends and stops. It does not grill, write a [spec](https://www.aihero.dev/ai-coding-dictionary/spec), open a file or fire the skill it just named; what you get back is the next thing to type, and you type it. It is also a hand-written map of the skills in this repo rather than a scan of what you have installed, so it will not route you over your own skills or another author's.
 
+The ticket-producing routes (`to-spec`, `to-tickets`, and `wayfinder`) write their output in Italian, and `triage` does the same for briefs and comments. Technical identifiers and tracker metadata retain their original spelling.
+
 ## When to reach for it
 
 You invoke this by typing `/ask-matt`; the agent won't reach for it on its own.

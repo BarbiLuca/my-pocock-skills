@@ -10,6 +10,10 @@ Break a plan, spec, or conversation into a set of **tickets**: tracer-bullet ver
 
 The issue tracker and triage label vocabulary should have been provided to you. If not, tell the user to run `/setup-matt-pocock-skills`.
 
+## Ticket language
+
+Write every ticket's title and body in Italian, including section headings, acceptance criteria, and the breakdown presented for approval, even when the plan or spec is in English. This applies to drafts and published issues, including local Markdown files. The English templates below define the structure; render their prose and headings in Italian. Preserve code, identifiers, URLs, exact quotations, technical terms, and the project's canonical domain vocabulary. Keep tracker labels and machine-readable field names and values unchanged, including `Blocked by`, `Status`, and `ready-for-agent` in the local tracker format.
+
 ## Process
 
 ### 1. Gather context

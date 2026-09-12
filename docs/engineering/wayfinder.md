@@ -4,6 +4,8 @@
 
 It plans, it does not do. Every ticket holds a question whose resolution is a decision, not a slice of a build to execute, and the map is finished when nothing is left to decide before someone goes and builds the thing. That one rule is what separates a wayfinder ticket from an ordinary implementation [ticket](https://www.aihero.dev/ai-coding-dictionary/ticket), and it is the rule agents break most often. When the map clears, wayfinder hands off; it does not carry on into code.
 
+Map and decision-ticket titles, bodies, and resolution comments are written in Italian, including later updates and content delegated to research agents. This applies to local files and remote trackers; technical identifiers, canonical domain terms, and tracker metadata retain their original spelling.
+
 ## When to reach for it
 
 You invoke this by typing `/wayfinder`; the [agent](https://www.aihero.dev/ai-coding-dictionary/agent) won't reach for it on its own.
