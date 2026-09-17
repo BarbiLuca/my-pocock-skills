@@ -1,0 +1,5 @@
+interface:
+  display_name: "Serial Implement"
+  short_description: "Implement a Linear parent's sub-issues one at a time"
+policy:
+  allow_implicit_invocation: false

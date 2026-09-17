@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Add the `serial-implement` skill (in-progress bucket, user-invoked). Given a Linear parent issue whose sub-issues are all `ready-for-agent`, it works them one at a time in dependency order on one branch, each in a fresh implementer subagent, runs `code-review` from the main session after each with a two-review cap before escalating to the user, keeps the Linear states (`In Progress`, `In Review`, `Done`) in step, and resumes from the first unfinished sub-issue on rerun.
+
 ### Changed
 
 - Write ticket content in Italian in `to-spec`, `to-tickets`, and `wayfinder`, including drafts, local Markdown tickets, and resolution comments. Write `triage` briefs, notes, and comments in Italian too. Preserve technical identifiers, canonical domain vocabulary, and tracker metadata.
