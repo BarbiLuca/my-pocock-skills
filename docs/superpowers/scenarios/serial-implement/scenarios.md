@@ -192,3 +192,80 @@ PASS.
 - A no-change `DONE` is accepted only with non-empty `EXISTING`, explicit ticket
   satisfaction, and successful verification commands.
 - The subsequent review includes every existing `(ASK-362)` commit.
+
+## Scenario 7: resume commits with a bare identifier
+
+A previous run committed `fix: ASK-362 add validation`, without parentheses,
+which satisfies the brief's identifier requirement. The Sub-issue remains `In
+Progress` and the implementation is complete.
+
+Pass when the commit enters `EXISTING` through an exact standalone identifier
+match, `START` is its parent, and a verified no-change resume reviews it.
+
+### RED
+
+Baseline against commit `c45ccc1`: FAIL. The bare identifier does not enter
+`EXISTING`, so `START` resets to `HEAD`, no-change `DONE` fails, and review never
+includes the prior commit.
+
+### GREEN
+
+Current working tree: PASS.
+
+- The matching rule accepts an exact bare `ASK-362` token and rejects the
+  longer `ASK-3620` identifier.
+- The existing commit enters `EXISTING`, so `START` is its parent.
+- A verified no-change `DONE` is accepted and the review runs from `START`.
+
+## Scenario 8: Guide after an ordinary Stop resume
+
+A previous review stopped on an ordinary blocking finding. The Linear
+checkpoint and `HEAD` still match, so rerun returns directly to ordinary
+escalation without an active implementer. The user now chooses Guide.
+
+Pass when the workflow spawns one fresh implementer with `EXISTING` and `START`
+before sending the guided fix, then preserves the guided review cap.
+
+### RED
+
+Baseline against commit `c45ccc1`: FAIL. Resume correctly reaches ordinary
+escalation, but Guide has no current implementer and contains no instruction to
+spawn one before sending the guided fix.
+
+### GREEN
+
+Current working tree: PASS.
+
+- A matching checkpoint resumes directly at ordinary escalation without an
+  active implementer.
+- Guide first spawns a fresh implementer with `EXISTING`, `START`, and the
+  dispatch brief.
+- The guided fix remains limited to two subsequent reviews.
+
+## Scenario 9: review fix fails with a pending delivery finding
+
+A review reports one ordinary blocker and one pull-request-only finding. Before
+the ordinary fix completes, the implementer returns `FAILED`.
+
+Pass when Linear already contains a checkpoint with the reviewed `HEAD`, both
+finding sets, evidence paths, and the fix action; the failure comment preserves
+that state and distinguishes the reviewed `HEAD` from any newer current `HEAD`.
+On rerun, unchanged code resumes escalation while changed code is re-reviewed
+from the original `START`.
+
+### RED
+
+Baseline against commit `c45ccc1`: FAIL. No checkpoint is written before the
+fix round. A later `FAILED` comment omits both finding sets, the fix action, and
+the reviewed `HEAD`, so unchanged code cannot resume escalation reliably.
+
+### GREEN
+
+Current working tree: PASS.
+
+- Review separates `OPEN_ORDINARY` from `PENDING_DELIVERY` and records
+  `REVIEWED_HEAD`.
+- The pre-fix and failure checkpoints retain both finding sets, evidence paths,
+  action, `START`, reviewed `HEAD`, and current `HEAD`.
+- An unchanged reviewed `HEAD` resumes escalation; a newer `HEAD` triggers a
+  review from the original `START`.

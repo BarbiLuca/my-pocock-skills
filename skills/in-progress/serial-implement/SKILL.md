@@ -45,9 +45,9 @@ Keep the resolved default branch name. Per-Sub-issue review anchors are derived 
 
 One Sub-issue at a time, in order. Dispatch nothing in parallel. Between Sub-issues, ask the user nothing.
 
-1. Find `EXISTING`, every commit after the default branch whose subject contains the literal `(<ID>)`, oldest first. If any exist, `START` is the parent of the oldest one. Otherwise `START` is the current `HEAD`. Every review of this Sub-issue uses this same `START`.
-2. Restore any checkpoint in the Sub-issue comments: its `START`, reviewed `HEAD`, open ordinary findings, pending delivery-boundary findings, local evidence paths, and last user decision. A checkpoint `START` must equal the derived `START`; otherwise stop and report the mismatch.
-3. When the current state is `In Review` and the checkpoint's reviewed `HEAD` equals the current `HEAD`, dispatch no implementer and resume at its unresolved [ordinary escalation](#5-escalation) or [delivery-boundary escalation](#delivery-boundary-escalation). When there is no matching checkpoint or `HEAD` changed, go directly to [review](#4-review-one-sub-issue) from `START`.
+1. Find `EXISTING`, every commit after the default branch whose subject contains `<ID>` as a standalone token, oldest first. Match non-alphanumeric boundaries, so both `(ASK-362)` and `ASK-362` match while `ASK-3620` does not. If any exist, `START` is the parent of the oldest one. Otherwise `START` is the current `HEAD`. Every review of this Sub-issue uses this same `START`.
+2. Restore the latest checkpoint in the Sub-issue comments: its `START`, `REVIEWED_HEAD`, open ordinary findings, pending delivery-boundary findings, local evidence paths, action, and last user decision. A checkpoint `START` must equal the derived `START`; otherwise stop and report the mismatch.
+3. When the current state is `In Review` and `REVIEWED_HEAD` equals the current `HEAD`, dispatch no implementer and resume at its unresolved [ordinary escalation](#5-escalation) or [delivery-boundary escalation](#delivery-boundary-escalation). When there is no matching checkpoint or `HEAD` changed, go directly to [review](#4-review-one-sub-issue) from `START`.
 4. Otherwise `save_issue`: state `In Progress`. Record `DISPATCH_HEAD`, then spawn a fresh implementer subagent with [IMPLEMENTER-BRIEF.md](IMPLEMENTER-BRIEF.md), including `EXISTING` and `START`. Wait for it.
 5. Act on its outcome:
    - **BLOCKED**: put the question to the user. Post question and answer as a comment on the Sub-issue. Send the answer to the same subagent (it keeps its context) and wait again.
@@ -61,10 +61,10 @@ One Sub-issue at a time, in order. Dispatch nothing in parallel. Between Sub-iss
 ## 4. Review one Sub-issue
 
 1. Write the Sub-issue (title, description, comments) to a scratch file: that file is the spec.
-2. Call the Skill tool with "code-review": fixed point `START`, the scratch file as the spec. Its two reviewers are fresh subagents.
-3. Classify findings. **Blocking**: every Spec-axis finding (missing, partial, or wrong requirement) and every breach of a documented repo standard. **Non-blocking**: smells and judgement calls. A blocking Spec finding is a **delivery-boundary finding** when its only completion requires pushing, opening or updating a pull request, or attaching an artifact to a remote pull request. This skill never performs those operations.
+2. Call the Skill tool with "code-review": fixed point `START`, the scratch file as the spec. Its two reviewers are fresh subagents. Record the current `HEAD` as `REVIEWED_HEAD`.
+3. Classify findings. **Blocking**: every Spec-axis finding (missing, partial, or wrong requirement) and every breach of a documented repo standard. **Non-blocking**: smells and judgement calls. A blocking Spec finding is a **delivery-boundary finding** when its only completion requires pushing, opening or updating a pull request, or attaching an artifact to a remote pull request. This skill never performs those operations. Store every other finding in `OPEN_ORDINARY`.
 4. Add every delivery-boundary finding to `PENDING_DELIVERY`; never replace this set with a later review's output. Only an explicit Accept or Defer decision clears an entry. Every other finding is ordinary.
-5. Send ordinary findings, blocking ones marked, to the current implementer for one fix round. On a review-only resume with no current implementer, spawn one fresh implementer with the dispatch brief first. Never include `PENDING_DELIVERY` in a fix prompt. When there are no ordinary findings, skip the fix round.
+5. Before a fix round, `save_comment` an Italian checkpoint containing `START`, `REVIEWED_HEAD`, current `HEAD`, `OPEN_ORDINARY`, `PENDING_DELIVERY`, local evidence paths, and action `Fix`. Send only `OPEN_ORDINARY`, blocking ones marked, to the current implementer. On a review-only resume with no current implementer, spawn one fresh implementer with the dispatch brief first. Never include `PENDING_DELIVERY` in a fix prompt. When there are no ordinary findings, skip the fix round. A **FAILED** fix goes to [Stopping](#stopping).
 6. The round had ordinary blocking findings: review again (steps 1 to 4). Two reviews per review cycle is the cap.
 7. Ordinary blocking findings remain after the second review: use [ordinary escalation](#5-escalation). Accept, Guide, and Defer operate only on ordinary findings and never clear `PENDING_DELIVERY`.
 8. When no ordinary blocking findings remain and `PENDING_DELIVERY` is non-empty, use [delivery-boundary escalation](#delivery-boundary-escalation).
@@ -85,7 +85,7 @@ Before applying the choice, `save_comment` in Italian with `START`, current `HEA
 Show the user the ordinary blocking findings still open and ask which of these they want:
 
 - **Accept**: treat the ordinary findings as accepted; continue to delivery-boundary escalation when `PENDING_DELIVERY` is non-empty, otherwise the review may complete.
-- **Guide**: the user gives direction. Send only the ordinary findings for one more fix round, then run up to two more reviews. Continue to delivery-boundary escalation when the ordinary findings clear and `PENDING_DELIVERY` is non-empty.
+- **Guide**: the user gives direction. If no current implementer exists, spawn one fresh implementer with `EXISTING`, `START`, and the dispatch brief. Send only the ordinary findings for one more fix round, then run up to two more reviews. Continue to delivery-boundary escalation when the ordinary findings clear and `PENDING_DELIVERY` is non-empty.
 - **Defer**: create a follow-up issue in the same team and project for the ordinary findings, `relatedTo` the Sub-issue; continue to delivery-boundary escalation when `PENDING_DELIVERY` is non-empty, otherwise the review may complete.
 - **Stop**: the Sub-issue stays `In Review`; go to [Stopping](#stopping).
 
@@ -93,7 +93,7 @@ Before applying the choice, `save_comment` in Italian with `START`, current `HEA
 
 ## Stopping
 
-The run stops at the first FAILED or at a Stop in escalation. The Sub-issue keeps the state it had, the branch and its commits stay exactly as they are, nothing is reset. Escalation Stops already have a Linear checkpoint; on FAILED, add an Italian comment with `START`, current `HEAD`, the failure, and every local evidence path before writing the [report](#report).
+The run stops at the first FAILED or at a Stop in escalation. The Sub-issue keeps the state it had, the branch and its commits stay exactly as they are, nothing is reset. Escalation Stops already have a Linear checkpoint; on FAILED, add an Italian checkpoint with `START`, `REVIEWED_HEAD` when a review ran, current `HEAD`, the failure, `OPEN_ORDINARY`, `PENDING_DELIVERY`, action `Failed`, and every local evidence path before writing the [report](#report). On rerun, equality is tested against `REVIEWED_HEAD`: unchanged reviewed code resumes escalation, while a newer current `HEAD` is reviewed again from `START`.
 
 Rerunning the skill on the same Parent issue resumes: Done Sub-issues are skipped, the branch is reused, `START` still precedes the oldest Sub-issue commit, and an unchanged `In Review` checkpoint resumes at escalation without manufacturing another commit.
 

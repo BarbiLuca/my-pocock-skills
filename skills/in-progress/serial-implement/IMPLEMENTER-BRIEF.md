@@ -16,7 +16,7 @@ Review fixed point: <START>. Every commit for this Sub-issue after that point re
 Process:
 - Call the Skill tool with "tdd" where possible, at pre-agreed seams.
 - Run typechecking regularly, single test files regularly, and the full test suite once at the end. Take the commands from the project's CLAUDE.md or package configuration.
-- When files need changes, commit to the current branch as you go: small atomic commits, semantic prefix, the Sub-issue identifier in every message, e.g. `feat: add expiry field (<ID>)`. A resume whose existing commits already satisfy the ticket needs no manufactured commit; verify the implementation and tests instead.
+- When files need changes, commit to the current branch as you go: small atomic commits, semantic prefix, and the Sub-issue identifier as a standalone token in every subject, e.g. `feat: add expiry field (<ID>)` or `fix: <ID> handle empty input`. A resume whose existing commits already satisfy the ticket needs no manufactured commit; verify the implementation and tests instead.
 - Work only on the local branch: never push, open or update a pull request, or attach artifacts to one. When a requirement needs a pull request, produce any useful local evidence and retain its paths for the pull-request-owning step.
 - The review happens after you return; do not run code-review.
 
