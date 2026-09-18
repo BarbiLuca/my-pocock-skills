@@ -52,17 +52,28 @@ One Sub-issue at a time, in order. Dispatch nothing in parallel. Between Sub-iss
    - **DONE** with no commits between `START` and `HEAD`: treat as FAILED.
    - **DONE**: continue.
 5. `save_issue`: state `In Review`. Run the [review](#4-review-one-sub-issue).
-6. `save_issue`: state `Done`. Comment: branch, each commit as SHA and subject, one line on the review outcome. Labels stay as they are.
+6. `save_issue`: state `Done`. Comment: branch, each commit as SHA and subject, one line on the review outcome, and any delivery-boundary decision with its local evidence paths. Labels stay as they are.
 
 ## 4. Review one Sub-issue
 
 1. Write the Sub-issue (title, description, comments) to a scratch file: that file is the spec.
 2. Call the Skill tool with "code-review": fixed point `START`, the scratch file as the spec. Its two reviewers are fresh subagents.
-3. Classify findings. **Blocking**: every Spec-axis finding (missing, partial, or wrong requirement) and every breach of a documented repo standard. **Non-blocking**: smells and judgement calls.
-4. Any findings at all: send them, blocking ones marked, to the same implementer subagent for one fix round (the fix-round message is in the brief file). It fixes, runs the tests, commits.
-5. The round had blocking findings: review again (steps 1 to 3). Two reviews per Sub-issue is the cap.
-6. Blocking findings remain after the second review: [escalate](#5-escalation).
-7. Otherwise the review passed.
+3. Classify findings. **Blocking**: every Spec-axis finding (missing, partial, or wrong requirement) and every breach of a documented repo standard. **Non-blocking**: smells and judgement calls. A blocking Spec finding is a **delivery-boundary finding** when its only completion requires pushing, opening or updating a pull request, or attaching an artifact to a remote pull request. This skill never performs those operations.
+4. Set delivery-boundary findings aside. Send every other finding, blocking ones marked, to the same implementer subagent for one fix round (the fix-round message is in the brief file). It fixes, runs the tests, commits. When there are no other findings, skip the fix round.
+5. The round had ordinary blocking findings: review again (steps 1 to 3). Two reviews per Sub-issue is the cap.
+6. Ordinary blocking findings remain after the second review: [escalate](#5-escalation).
+7. When the latest review has delivery-boundary findings and no ordinary blocking findings remain, use [delivery-boundary escalation](#delivery-boundary-escalation). Never send those findings to the implementer.
+8. Otherwise the review passed.
+
+### Delivery-boundary escalation
+
+Show the delivery-boundary findings and every local evidence path returned by the implementer. Ask the user to choose:
+
+- **Accept**: record the unmet external requirement and local evidence paths, then the Sub-issue goes to Done as it is.
+- **Defer**: create a follow-up issue in the same team and project for the pull-request-owning step, `relatedTo` the Sub-issue, with the local evidence paths; the Sub-issue goes to Done and the run continues.
+- **Stop**: the Sub-issue stays `In Review`; go to [Stopping](#stopping).
+
+When the user does not choose, Stop. `Guide` is not offered because an implementer working only on the local branch cannot complete a remote pull request operation.
 
 ## 5. Escalation
 
@@ -88,6 +99,7 @@ At the end, complete or stopped, tell the user:
 - the branch
 - per Sub-issue: done, skipped, or failed; its commits; one line on its review
 - every question answered during the run
+- every delivery-boundary finding, the user's decision, and all local evidence paths
 - the remaining queue, when stopped
 
 The skill never pushes, never opens a PR, and never modifies the Parent issue. Suggest `/code-review main` on the whole branch before the PR.

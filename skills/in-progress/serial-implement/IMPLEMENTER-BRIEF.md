@@ -16,12 +16,13 @@ Process:
 - Call the Skill tool with "tdd" where possible, at pre-agreed seams.
 - Run typechecking regularly, single test files regularly, and the full test suite once at the end. Take the commands from the project's CLAUDE.md or package configuration.
 - Commit to the current branch as you go: small atomic commits, semantic prefix, the Sub-issue identifier in every message, e.g. `feat: add expiry field (<ID>)`. Leave at least one commit.
+- Work only on the local branch: never push, open or update a pull request, or attach artifacts to one. When a requirement needs a pull request, produce any useful local evidence and retain its paths for the pull-request-owning step.
 - The review happens after you return; do not run code-review.
 
 Questions: return BLOCKED only for a decision that the Sub-issue, CONTEXT.md, the ADRs, and CLAUDE.md leave open and that changes the result. Procedure and permission questions are yours to settle. You will receive the answer in a follow-up message; continue from where you stopped.
 
 Return exactly one of:
-- DONE, then the list of commits (SHA and subject).
+- DONE, then the list of commits (SHA and subject) and every local evidence path needed by a requirement outside this skill's delivery boundary, or `none`.
 - BLOCKED, then the question and the minimum context needed to answer it.
 - FAILED, then the reason: what you tried and what is still red.
 ```
