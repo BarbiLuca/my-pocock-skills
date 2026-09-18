@@ -4,7 +4,7 @@
 
 ### Added
 
-- Add the `serial-implement` skill (in-progress bucket, user-invoked). Given a Linear parent issue whose sub-issues are all `ready-for-agent`, it works them one at a time in dependency order on one local branch, each in a fresh implementer subagent, runs `code-review` from the main session after each with a two-review cap before escalating to the user, keeps the Linear states (`In Progress`, `In Review`, `Done`) in step, and resumes from the first unfinished sub-issue on rerun. It never pushes or opens a pull request; a pull-request-only finding requires an explicit Accept, Defer, or Stop decision and preserves local evidence for the pull-request-owning step.
+- Add the `serial-implement` skill (in-progress bucket, user-invoked). Given a Linear parent issue whose sub-issues are all `ready-for-agent`, it works them one at a time in dependency order on one local branch, each in a fresh implementer subagent, runs `code-review` from the main session after each with a two-review cap before escalating to the user, keeps the Linear states (`In Progress`, `In Review`, `Done`) in step, and resumes from the first unfinished Sub-issue on rerun without losing its original commit range. It never pushes or opens a pull request; a pull-request-only finding requires an explicit Accept, Defer, or Stop decision and preserves local evidence for the pull-request-owning step.
 
 ### Changed
 

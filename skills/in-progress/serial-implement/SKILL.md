@@ -26,7 +26,7 @@ Nothing touches git until every check below passes. Any failed check ends the ru
    - anything else carrying the label: **queued**
    - anything else: **not ready**
    One or more not ready: stop and list them with state and labels.
-6. Order the queue. `get_issue` with `includeRelations: true` on each queued Sub-issue; sort topologically on the "blocked by" edges, blockers first, creation order as tie-break. A blocker that is skipped counts as satisfied. A cycle: stop and name the Sub-issues in it.
+6. Order the queue. `get_issue` with `includeRelations: true` on each queued Sub-issue; keep its current state, description, and every comment, then sort topologically on the "blocked by" edges, blockers first, creation order as tie-break. A blocker that is skipped counts as satisfied. A cycle: stop and name the Sub-issues in it.
 7. `list_issue_statuses` for the team. `In Progress`, `In Review`, and `Done` must all exist by name. Any missing: stop.
 8. `git status --porcelain` must be empty. Otherwise ask the user whether to stash, commit, or abort. Never discard their changes.
 
@@ -36,68 +36,73 @@ Done when the queue is ordered, every Sub-issue is classified, and the three sta
 
 The branch name is the Parent issue's `gitBranchName`.
 
-- It exists (locally or on the remote): check it out. This is a **resume**. Commits already on it belong to earlier runs and are listed in the next implementer's brief.
+- It exists (locally or on the remote): check it out. This is a **resume**. Commits already on it remain part of their Sub-issue's review range.
 - It does not: update the default branch (`git pull`), then create the branch from it.
+
+Keep the resolved default branch name. Per-Sub-issue review anchors are derived from it in the queue.
 
 ## 3. Work the queue
 
 One Sub-issue at a time, in order. Dispatch nothing in parallel. Between Sub-issues, ask the user nothing.
 
-1. `save_issue`: state `In Progress`.
-2. Record `START`, the current `HEAD` SHA.
-3. Spawn a fresh implementer subagent with the brief in [IMPLEMENTER-BRIEF.md](IMPLEMENTER-BRIEF.md), filled in. Wait for it.
-4. Act on its outcome:
+1. Find `EXISTING`, every commit after the default branch whose subject contains the literal `(<ID>)`, oldest first. If any exist, `START` is the parent of the oldest one. Otherwise `START` is the current `HEAD`. Every review of this Sub-issue uses this same `START`.
+2. Restore any checkpoint in the Sub-issue comments: its `START`, reviewed `HEAD`, open ordinary findings, pending delivery-boundary findings, local evidence paths, and last user decision. A checkpoint `START` must equal the derived `START`; otherwise stop and report the mismatch.
+3. When the current state is `In Review` and the checkpoint's reviewed `HEAD` equals the current `HEAD`, dispatch no implementer and resume at its unresolved [ordinary escalation](#5-escalation) or [delivery-boundary escalation](#delivery-boundary-escalation). When there is no matching checkpoint or `HEAD` changed, go directly to [review](#4-review-one-sub-issue) from `START`.
+4. Otherwise `save_issue`: state `In Progress`. Record `DISPATCH_HEAD`, then spawn a fresh implementer subagent with [IMPLEMENTER-BRIEF.md](IMPLEMENTER-BRIEF.md), including `EXISTING` and `START`. Wait for it.
+5. Act on its outcome:
    - **BLOCKED**: put the question to the user. Post question and answer as a comment on the Sub-issue. Send the answer to the same subagent (it keeps its context) and wait again.
    - **FAILED**: go to [Stopping](#stopping).
-   - **DONE** with no commits between `START` and `HEAD`: treat as FAILED.
+   - **DONE** with no commits after `DISPATCH_HEAD` and no `EXISTING`: treat as FAILED.
+   - **DONE** with no commits after `DISPATCH_HEAD` and non-empty `EXISTING`: continue only when the implementer explicitly reports that the existing implementation already satisfies the ticket and lists successful verification commands. Otherwise treat it as FAILED.
    - **DONE**: continue.
-5. `save_issue`: state `In Review`. Run the [review](#4-review-one-sub-issue).
-6. `save_issue`: state `Done`. Comment: branch, each commit as SHA and subject, one line on the review outcome, and any delivery-boundary decision with its local evidence paths. Labels stay as they are.
+6. `save_issue`: state `In Review`. Run the [review](#4-review-one-sub-issue).
+7. `save_issue`: state `Done`. Comment in Italian: branch, each commit as SHA and subject, one line on the review outcome, and any delivery-boundary decision with its local evidence paths. Labels stay as they are.
 
 ## 4. Review one Sub-issue
 
 1. Write the Sub-issue (title, description, comments) to a scratch file: that file is the spec.
 2. Call the Skill tool with "code-review": fixed point `START`, the scratch file as the spec. Its two reviewers are fresh subagents.
 3. Classify findings. **Blocking**: every Spec-axis finding (missing, partial, or wrong requirement) and every breach of a documented repo standard. **Non-blocking**: smells and judgement calls. A blocking Spec finding is a **delivery-boundary finding** when its only completion requires pushing, opening or updating a pull request, or attaching an artifact to a remote pull request. This skill never performs those operations.
-4. Set delivery-boundary findings aside. Send every other finding, blocking ones marked, to the same implementer subagent for one fix round (the fix-round message is in the brief file). It fixes, runs the tests, commits. When there are no other findings, skip the fix round.
-5. The round had ordinary blocking findings: review again (steps 1 to 3). Two reviews per Sub-issue is the cap.
-6. Ordinary blocking findings remain after the second review: [escalate](#5-escalation).
-7. When the latest review has delivery-boundary findings and no ordinary blocking findings remain, use [delivery-boundary escalation](#delivery-boundary-escalation). Never send those findings to the implementer.
-8. Otherwise the review passed.
+4. Add every delivery-boundary finding to `PENDING_DELIVERY`; never replace this set with a later review's output. Only an explicit Accept or Defer decision clears an entry. Every other finding is ordinary.
+5. Send ordinary findings, blocking ones marked, to the current implementer for one fix round. On a review-only resume with no current implementer, spawn one fresh implementer with the dispatch brief first. Never include `PENDING_DELIVERY` in a fix prompt. When there are no ordinary findings, skip the fix round.
+6. The round had ordinary blocking findings: review again (steps 1 to 4). Two reviews per review cycle is the cap.
+7. Ordinary blocking findings remain after the second review: use [ordinary escalation](#5-escalation). Accept, Guide, and Defer operate only on ordinary findings and never clear `PENDING_DELIVERY`.
+8. When no ordinary blocking findings remain and `PENDING_DELIVERY` is non-empty, use [delivery-boundary escalation](#delivery-boundary-escalation).
+9. Otherwise the review passed.
 
 ### Delivery-boundary escalation
 
-Show the delivery-boundary findings and every local evidence path returned by the implementer. Ask the user to choose:
+Show `PENDING_DELIVERY` and every local evidence path returned by the implementer or restored from the checkpoint. Ask the user to choose:
 
-- **Accept**: record the unmet external requirement and local evidence paths, then the Sub-issue goes to Done as it is.
-- **Defer**: create a follow-up issue in the same team and project for the pull-request-owning step, `relatedTo` the Sub-issue, with the local evidence paths; the Sub-issue goes to Done and the run continues.
+- **Accept**: clear `PENDING_DELIVERY`; the review may complete and the caller moves the Sub-issue to Done as it is.
+- **Defer**: create a follow-up issue in the same team and project for the pull-request-owning step, `relatedTo` the Sub-issue, with the local evidence paths; clear `PENDING_DELIVERY`; the review may complete and the run continues.
 - **Stop**: the Sub-issue stays `In Review`; go to [Stopping](#stopping).
 
-When the user does not choose, Stop. `Guide` is not offered because an implementer working only on the local branch cannot complete a remote pull request operation.
+Before applying the choice, `save_comment` in Italian with `START`, current `HEAD`, every finding, the choice, and every local evidence path. When the user does not choose, record and apply Stop. `Guide` is not offered because an implementer working only on the local branch cannot complete a remote pull request operation.
 
 ## 5. Escalation
 
-Show the user the blocking findings still open and ask which of these they want:
+Show the user the ordinary blocking findings still open and ask which of these they want:
 
-- **Accept**: the Sub-issue goes to Done as it is.
-- **Guide**: the user gives direction. One more fix round with that direction, then up to two more reviews. Post the direction as a comment on the Sub-issue.
-- **Defer**: create a follow-up issue in the same team and project for the open findings, `relatedTo` the Sub-issue; the Sub-issue goes to Done; the run continues.
+- **Accept**: treat the ordinary findings as accepted; continue to delivery-boundary escalation when `PENDING_DELIVERY` is non-empty, otherwise the review may complete.
+- **Guide**: the user gives direction. Send only the ordinary findings for one more fix round, then run up to two more reviews. Continue to delivery-boundary escalation when the ordinary findings clear and `PENDING_DELIVERY` is non-empty.
+- **Defer**: create a follow-up issue in the same team and project for the ordinary findings, `relatedTo` the Sub-issue; continue to delivery-boundary escalation when `PENDING_DELIVERY` is non-empty, otherwise the review may complete.
 - **Stop**: the Sub-issue stays `In Review`; go to [Stopping](#stopping).
 
-When the user does not choose, Stop.
+Before applying the choice, `save_comment` in Italian with `START`, current `HEAD`, the ordinary findings, the choice, and any still-pending delivery-boundary findings and evidence paths. When the user does not choose, record and apply Stop. A guided fix prompt contains only ordinary findings.
 
 ## Stopping
 
-The run stops at the first FAILED or at a Stop in escalation. The Sub-issue keeps the state it had, the branch and its commits stay exactly as they are, nothing is reset. Then write the [report](#report).
+The run stops at the first FAILED or at a Stop in escalation. The Sub-issue keeps the state it had, the branch and its commits stay exactly as they are, nothing is reset. Escalation Stops already have a Linear checkpoint; on FAILED, add an Italian comment with `START`, current `HEAD`, the failure, and every local evidence path before writing the [report](#report).
 
-Rerunning the skill on the same Parent issue resumes: Done Sub-issues are skipped, the branch is reused, and the brief of a Sub-issue that already has commits lists them so the implementer continues instead of starting over.
+Rerunning the skill on the same Parent issue resumes: Done Sub-issues are skipped, the branch is reused, `START` still precedes the oldest Sub-issue commit, and an unchanged `In Review` checkpoint resumes at escalation without manufacturing another commit.
 
 ## Report
 
 At the end, complete or stopped, tell the user:
 
 - the branch
-- per Sub-issue: done, skipped, or failed; its commits; one line on its review
+- per Sub-issue: done, skipped, failed, or in review; its commits; one line on its review
 - every question answered during the run
 - every delivery-boundary finding, the user's decision, and all local evidence paths
 - the remaining queue, when stopped
