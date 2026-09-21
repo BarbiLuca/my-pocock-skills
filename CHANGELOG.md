@@ -2,8 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- Add the `serial-implement` skill (in-progress bucket, user-invoked). Given a Linear parent issue whose sub-issues are all `ready-for-agent`, it works them one at a time in dependency order on one local branch, each in a fresh implementer subagent, runs `code-review` from the main session after each with a two-review cap before escalating to the user, keeps the Linear states (`In Progress`, `In Review`, `Done`) in step, and resumes from the first unfinished Sub-issue on rerun without losing its original commit range. It never pushes or opens a pull request; a pull-request-only finding requires an explicit Accept, Defer, or Stop decision and preserves local evidence for the pull-request-owning step.
+
 ### Changed
 
+- Bound the context `serial-implement` accumulates in the main session. A **Context budget** section caps orientation reads at 4,000 tokens per call, routes reference documents and off-disk material through `rg` on scratch files, fixes the field-projected forms of every Preflight Linear query, defers a Sub-issue's description and comments to its own turn, requires subagents spawned with no inherited context (`fork_turns: "none"` on Codex, whose default copies the whole parent conversation), drops `list_agents` polling, and adds a 120-turn budget after which the run reports and asks whether to continue here or resume in a fresh session. Measured on a six-Sub-issue run (262 turns, 35.4M input tokens), the rules remove about 18M input tokens.
+- Make `serial-implement` ask, before Preflight, which model the implementer runs on and which the reviewers run on, defaulting both to the session's model, and pass the answers at every spawn. On the same measured run the subagents took 217M of the 252M input tokens (reviewers 93M, implementers 124M), so the model tier of the subagents is the largest cost lever the skill has; the report now names the models used, so runs can be compared.
 - Write ticket content in Italian in `to-spec`, `to-tickets`, and `wayfinder`, including drafts, local Markdown tickets, and resolution comments. Write `triage` briefs, notes, and comments in Italian too. Preserve technical identifiers, canonical domain vocabulary, and tracker metadata.
 
 ## 1.2.3

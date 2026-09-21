@@ -18,11 +18,20 @@ A `wayfinder` unit: a child **Issue** of a `wayfinder:map` holding a *question* 
 **Triage role**:
 A canonical state-machine label applied to an **Issue** during triage (e.g. `needs-triage`, `ready-for-afk`). Each role maps to a real label string in the **Issue tracker** via `docs/agents/triage-labels.md`.
 
+**Parent issue**:
+An **Issue** that owns **Sub-issues** through the **Issue tracker**'s native parent relation. The unit `serial-implement` takes as input.
+_Avoid_: epic, umbrella issue, tracking issue
+
+**Sub-issue**:
+An **Issue** attached to exactly one **Parent issue** through the tracker's native parent relation; the slices `to-tickets` publishes are Sub-issues of the issue they came from.
+_Avoid_: child issue, subtask, ticket
+
 ## Relationships
 
 - An **Issue tracker** holds many **Issues**
 - An **Issue** carries one **Triage role** at a time
 - A **Decision ticket** is an **Issue** (a child of a `wayfinder:map`)
+- A **Parent issue** owns many **Sub-issues**; a **Sub-issue** has exactly one **Parent issue** and never owns Sub-issues of its own
 
 ## Flagged ambiguities
 
