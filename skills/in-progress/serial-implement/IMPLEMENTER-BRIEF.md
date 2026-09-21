@@ -1,6 +1,6 @@
 # Implementer brief
 
-Fill in the placeholders and send this as the subagent's prompt. Context pointers over copies: the implementer reads its ticket from Linear itself, so later comments on it are seen.
+Fill in the placeholders and send this as the subagent's prompt. Spawn it with no inherited context (on Codex, `fork_turns: "none"`): this prompt is everything it knows. Context pointers over copies: the implementer reads its ticket from Linear itself, so later comments on it are seen.
 
 ## Dispatch
 
@@ -23,7 +23,7 @@ Process:
 Questions: return BLOCKED only for a decision that the Sub-issue, CONTEXT.md, the ADRs, and CLAUDE.md leave open and that changes the result. Procedure and permission questions are yours to settle. You will receive the answer in a follow-up message; continue from where you stopped.
 
 Return exactly one of:
-- DONE, then the complete list of this Sub-issue's commits (SHA and subject), whether this dispatch created a commit, the verification commands and results, and every local evidence path needed by a requirement outside this skill's delivery boundary, or `none`.
+- DONE, then the complete list of this Sub-issue's commits (SHA and subject), whether this dispatch created a commit, the verification commands with one line of result each, and every local evidence path needed by a requirement outside this skill's delivery boundary, or `none`.
 - BLOCKED, then the question and the minimum context needed to answer it.
 - FAILED, then the reason: what you tried and what is still red.
 ```

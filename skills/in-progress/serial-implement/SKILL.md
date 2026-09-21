@@ -11,22 +11,32 @@ Take a Linear **Parent issue** and implement each of its **Sub-issues** in depen
 
 The goal is fewer interruptions, not autonomy. The user answers real decisions and never confirms routine steps.
 
-Linear is reached through the Linear MCP tools: `get_issue`, `list_issues`, `list_issue_statuses`, `save_issue`, `save_comment`. Everything written to Linear (comments, follow-up issues) is in Italian; code, identifiers, and commit messages stay in English.
+Linear is reached through the Linear MCP tools: `get_issue`, `list_issues`, `list_comments`, `list_issue_statuses`, `save_issue`, `save_comment`. Everything written to Linear (comments, follow-up issues) is in Italian; code, identifiers, and commit messages stay in English.
+
+## Context budget
+
+Every turn resends the whole conversation, so a run costs turns times context size. The rules below bound both and apply to the main session throughout this skill.
+
+- **Orientation read**, one whose purpose is to find where something is (a file, a listing, a search): at most 4,000 tokens of output per call. Take a table of contents or an `rg` hit list first, then the lines it names. **Targeted read**, one whose target is known (a line range, a ticket, a diff hunk): as long as the target, never the whole file around it.
+- **Reference documents** (`CONTEXT.md`, `.ai/PROJECT_ARCHITECTURE.md`, `.ai/DESIGN_KIT.md`, ADRs, other skills' `SKILL.md`) are queried with `rg` for the term in hand, and only when a decision of the main session needs them: the implementer and the reviewers read the project on their own. Material not on disk (a Linear issue with its comments, a tool listing, a search result) is written to a scratch file first and queried the same way.
+- **Linear reads** carry a field list and a limit sized to the answer. The forms allowed in Preflight are written there; the scratch spec in [Review](#4-review-one-sub-issue) is the one full read of a Sub-issue. A search, for instance before a follow-up issue, is `list_issues` with `query`, `team`, `project`, `fields: ["id", "title", "status"]`, `limit: 10`.
+- **Subagents** start with no inherited context: the brief is everything they know. On Codex pass `fork_turns: "none"` to `spawn_agent`; its default, `all`, copies this whole conversation into the child. The roster is what this session spawned: task names and outcomes come back in the spawn and wait results, so `list_agents` never runs. Wait with the longest timeout the harness accepts; a timed-out wait is followed by another wait.
+- **Turn budget**: 120 turns per run, a turn being one model response, tool calls counted as the proxy. Check the count before each implementer dispatch and before each fix round. Over budget, the Linear state is already resumable: write the [report](#report), then ask the user one question: continue in this session, with the context as large as it is, or stop here and rerun the skill in a fresh session, which resumes from the first unfinished Sub-issue. Recommend the fresh session.
 
 ## 1. Preflight
 
 Nothing touches git until every check below passes. Any failed check ends the run with a message naming what failed.
 
 1. Resolve the argument (identifier or URL) to the Parent issue with `get_issue`. Keep its identifier, team, and `gitBranchName`.
-2. List its Sub-issues with `list_issues` (`parentId` = the parent; fields `id`, `title`, `status`, `statusType`, `labels`, `createdAt`). No Sub-issues: stop.
-3. For each Sub-issue, `list_issues` with `parentId` = that Sub-issue. Any result means nested Sub-issues: stop.
+2. List its Sub-issues: `list_issues` with `parentId` = the parent, `fields: ["id", "title", "status", "statusType", "labels", "createdAt"]`, `orderBy: "createdAt"`, default limit; follow `cursor` when a page is full. No Sub-issues: stop.
+3. Nested check, one call per Sub-issue: `list_issues` with `parentId` = that Sub-issue, `fields: ["id"]`, `limit: 1`. Any result means nested Sub-issues: stop.
 4. Resolve the `ready-for-agent` label string: the mapping in `docs/agents/triage-labels.md` when the repo has one, else the literal `ready-for-agent`.
 5. Classify every Sub-issue:
    - `statusType` `completed` or `canceled`: **skipped**
    - anything else carrying the label: **queued**
    - anything else: **not ready**
    One or more not ready: stop and list them with state and labels.
-6. Order the queue. `get_issue` with `includeRelations: true` on each queued Sub-issue; keep its current state, description, and every comment, then sort topologically on the "blocked by" edges, blockers first, creation order as tie-break. A blocker that is skipped counts as satisfied. A cycle: stop and name the Sub-issues in it.
+6. Order the queue. One `get_issue` with `includeRelations: true` per queued Sub-issue; keep only its identifier, state, and "blocked by" list, and let the rest of the payload go: description and comments are read once, when the Sub-issue's turn comes (steps 3.2 and 4.1). Then sort topologically on the "blocked by" edges, blockers first, creation order as tie-break. A blocker that is skipped counts as satisfied. A cycle: stop and name the Sub-issues in it.
 7. `list_issue_statuses` for the team. `In Progress`, `In Review`, and `Done` must all exist by name. Any missing: stop.
 8. `git status --porcelain` must be empty. Otherwise ask the user whether to stash, commit, or abort. Never discard their changes.
 
@@ -46,9 +56,9 @@ Keep the resolved default branch name. Per-Sub-issue review anchors are derived 
 One Sub-issue at a time, in order. Dispatch nothing in parallel. Between Sub-issues, ask the user nothing.
 
 1. Find `EXISTING`, every commit after the default branch whose subject contains `<ID>` as a standalone token, oldest first. Match non-alphanumeric boundaries, so both `(ASK-362)` and `ASK-362` match while `ASK-3620` does not. If any exist, `START` is the parent of the oldest one. Otherwise `START` is the current `HEAD`. Every review of this Sub-issue uses this same `START`.
-2. Restore the latest checkpoint in the Sub-issue comments: its `START`, `REVIEWED_HEAD`, open ordinary findings, pending delivery-boundary findings, local evidence paths, action, and last user decision. A checkpoint `START` must equal the derived `START`; otherwise stop and report the mismatch.
+2. `list_comments` with `issueId` = the Sub-issue, `orderBy: "createdAt"`; the latest comment carrying `START` is the checkpoint. Restore its `START`, `REVIEWED_HEAD`, open ordinary findings, pending delivery-boundary findings, local evidence paths, action, and last user decision. A checkpoint `START` must equal the derived `START`; otherwise stop and report the mismatch.
 3. When the current state is `In Review` and `REVIEWED_HEAD` equals the current `HEAD`, dispatch no implementer and resume at its unresolved [ordinary escalation](#5-escalation) or [delivery-boundary escalation](#delivery-boundary-escalation). When there is no matching checkpoint or `HEAD` changed, go directly to [review](#4-review-one-sub-issue) from `START`.
-4. Otherwise `save_issue`: state `In Progress`. Record `DISPATCH_HEAD`, then spawn a fresh implementer subagent with [IMPLEMENTER-BRIEF.md](IMPLEMENTER-BRIEF.md), including `EXISTING` and `START`. Wait for it.
+4. Otherwise apply the [turn budget](#context-budget), then `save_issue`: state `In Progress`. Record `DISPATCH_HEAD`, then spawn the implementer with no inherited context and [IMPLEMENTER-BRIEF.md](IMPLEMENTER-BRIEF.md) as its whole prompt, including `EXISTING` and `START`. Wait for it.
 5. Act on its outcome:
    - **BLOCKED**: put the question to the user. Post question and answer as a comment on the Sub-issue. Send the answer to the same subagent (it keeps its context) and wait again.
    - **FAILED**: go to [Stopping](#stopping).
@@ -60,11 +70,11 @@ One Sub-issue at a time, in order. Dispatch nothing in parallel. Between Sub-iss
 
 ## 4. Review one Sub-issue
 
-1. Write the Sub-issue (title, description, comments) to a scratch file: that file is the spec.
-2. Call the Skill tool with "code-review": fixed point `START`, the scratch file as the spec. Its two reviewers are fresh subagents. Record the current `HEAD` as `REVIEWED_HEAD`.
+1. `get_issue` and `list_comments` (`orderBy: "createdAt"`) on the Sub-issue, once per review; write title, description, and comments to a scratch file: that file is the spec, and the reviewers read it from disk.
+2. Call the Skill tool with "code-review": fixed point `START`, the scratch file as the spec. Its two reviewers start with no inherited context, like the implementer. Record the current `HEAD` as `REVIEWED_HEAD`.
 3. Classify findings. **Blocking**: every Spec-axis finding (missing, partial, or wrong requirement) and every breach of a documented repo standard. **Non-blocking**: smells and judgement calls. A blocking Spec finding is a **delivery-boundary finding** when its only completion requires pushing, opening or updating a pull request, or attaching an artifact to a remote pull request. This skill never performs those operations. Store every other finding in `OPEN_ORDINARY`.
 4. Add every delivery-boundary finding to `PENDING_DELIVERY`; never replace this set with a later review's output. Only an explicit Accept or Defer decision clears an entry. Every other finding is ordinary.
-5. Before a fix round, `save_comment` an Italian checkpoint containing `START`, `REVIEWED_HEAD`, current `HEAD`, `OPEN_ORDINARY`, `PENDING_DELIVERY`, local evidence paths, and action `Fix`. Send only `OPEN_ORDINARY`, blocking ones marked, to the current implementer. On a review-only resume with no current implementer, spawn one fresh implementer with the dispatch brief first. Never include `PENDING_DELIVERY` in a fix prompt. When there are no ordinary findings, skip the fix round. A **FAILED** fix goes to [Stopping](#stopping).
+5. Before a fix round, apply the [turn budget](#context-budget), then `save_comment` an Italian checkpoint containing `START`, `REVIEWED_HEAD`, current `HEAD`, `OPEN_ORDINARY`, `PENDING_DELIVERY`, local evidence paths, and action `Fix`. Send only `OPEN_ORDINARY`, blocking ones marked, to the current implementer. On a review-only resume with no current implementer, spawn one fresh implementer with the dispatch brief first. Never include `PENDING_DELIVERY` in a fix prompt. When there are no ordinary findings, skip the fix round. A **FAILED** fix goes to [Stopping](#stopping).
 6. The round had ordinary blocking findings: review again (steps 1 to 4). Two reviews per review cycle is the cap.
 7. Ordinary blocking findings remain after the second review: use [ordinary escalation](#5-escalation). Accept, Guide, and Defer operate only on ordinary findings and never clear `PENDING_DELIVERY`.
 8. When no ordinary blocking findings remain and `PENDING_DELIVERY` is non-empty, use [delivery-boundary escalation](#delivery-boundary-escalation).
@@ -106,6 +116,7 @@ At the end, complete or stopped, tell the user:
 - every question answered during the run
 - every delivery-boundary finding, the user's decision, and all local evidence paths
 - the remaining queue, when stopped
+- the turn count, when the turn budget stopped the run
 
 The skill never pushes, never opens a PR, and never modifies the Parent issue. Suggest `/code-review main` on the whole branch before the PR.
 

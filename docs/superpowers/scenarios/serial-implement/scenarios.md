@@ -269,3 +269,81 @@ Current working tree: PASS.
   action, `START`, reviewed `HEAD`, and current `HEAD`.
 - An unchanged reviewed `HEAD` resumes escalation; a newer `HEAD` triggers a
   review from the original `START`.
+
+## Scenario 10: a six-Sub-issue run on a harness whose spawn inherits context
+
+The Parent issue has six queued Sub-issues. The harness is Codex, where
+`spawn_agent` defaults to `fork_turns: "all"`. The repo carries a 900-line
+`.ai/PROJECT_ARCHITECTURE.md` and a 500-line `.ai/DESIGN_KIT.md`. The main
+session is at turn 90 with a 160k-token context when the fourth implementer is
+due.
+
+Pressure: a spawn that works either way, documents that look worth reading
+before dispatching, and a Linear MCP that answers every `list_issues` with
+full payloads unless told otherwise.
+
+Pass when the workflow:
+
+- spawns every implementer and reviewer with no inherited context, naming
+  `fork_turns: "none"` on Codex;
+- lists Sub-issues with the field list and `orderBy` given in Preflight step 2,
+  runs the nested check with `fields: ["id"]` and `limit: 1`, and keeps only
+  identifier, state, and "blocked by" from the ordering read;
+- reads a Sub-issue's description and comments once, at its own turn, into
+  the scratch spec;
+- queries the architecture and design documents with `rg` for the term in
+  hand instead of reading them through;
+- learns the roster from spawn and wait results, without `list_agents`.
+
+### RED
+
+Baseline against commit `364bee2`: FAIL.
+
+- "Fresh implementer" names no mechanism, so a Codex spawn that omits
+  `fork_turns` copies the whole parent conversation into the child.
+- Preflight step 6 loads every queued Sub-issue's description and comments at
+  once.
+- No read has an output bound, and nothing stops the main session from
+  reading the reference documents through.
+- Nothing addresses roster polling.
+
+### GREEN
+
+PASS.
+
+- The **Context budget** section names the no-inherited-context spawn, the
+  Codex parameter and its default, the 4,000-token orientation cap, the `rg`
+  route for reference documents and off-disk material, and the roster rule.
+- Preflight steps 2, 3, and 6 carry the exact projected forms, and step 6
+  defers description and comments to steps 3.2 and 4.1.
+
+## Scenario 11: turn budget spent mid-queue
+
+Three Sub-issues are Done, the fourth is about to be dispatched, and the main
+session counts 124 tool calls. The user asked at the start for the whole queue
+today.
+
+Pressure: a queue that is half done, a user expectation, and a dispatch that is
+routine.
+
+Pass when the workflow:
+
+- checks the budget before the dispatch and finds it spent;
+- writes the report with the turn count and stops before dispatching;
+- asks one question: continue in this session or rerun in a fresh session,
+  recommending the fresh session;
+- on rerun, resumes at the fourth Sub-issue through the existing resume path
+  without a new checkpoint mechanism.
+
+### RED
+
+Baseline against commit `364bee2`: FAIL. No budget exists; the run continues
+until the harness compacts the context, after which the session rebuilds the
+queue state from scratch.
+
+### GREEN
+
+PASS. The budget is checked at the two points that already resume cleanly
+(before a dispatch, before a fix round), the report carries the turn count,
+and the rerun resumes from the first unfinished Sub-issue as Scenarios 5 to 8
+already require.

@@ -8,6 +8,7 @@
 
 ### Changed
 
+- Bound the context `serial-implement` accumulates in the main session. A **Context budget** section caps orientation reads at 4,000 tokens per call, routes reference documents and off-disk material through `rg` on scratch files, fixes the field-projected forms of every Preflight Linear query, defers a Sub-issue's description and comments to its own turn, requires subagents spawned with no inherited context (`fork_turns: "none"` on Codex, whose default copies the whole parent conversation), drops `list_agents` polling, and adds a 120-turn budget after which the run reports and asks whether to continue here or resume in a fresh session. Measured on a six-Sub-issue run (262 turns, 35.4M input tokens), the rules remove about 18M input tokens.
 - Write ticket content in Italian in `to-spec`, `to-tickets`, and `wayfinder`, including drafts, local Markdown tickets, and resolution comments. Write `triage` briefs, notes, and comments in Italian too. Preserve technical identifiers, canonical domain vocabulary, and tracker metadata.
 
 ## 1.2.3
