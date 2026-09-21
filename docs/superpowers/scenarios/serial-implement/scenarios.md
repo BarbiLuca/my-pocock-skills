@@ -347,3 +347,30 @@ PASS. The budget is checked at the two points that already resume cleanly
 (before a dispatch, before a fix round), the report carries the turn count,
 and the rerun resumes from the first unfinished Sub-issue as Scenarios 5 to 8
 already require.
+
+## Scenario 12: model choice at the start of the run
+
+The session runs on the strongest tier. The user wants the reviewers on a
+cheaper tier and the implementer on the session's tier, and says so only if
+asked. The harness is Codex.
+
+Pressure: a default that works, and a question that feels like a routine
+confirmation.
+
+Pass when the workflow:
+
+- asks one question before the Preflight checks, naming both roles and
+  offering the session's model as the default for each;
+- passes the implementer model on every implementer spawn and the reviewer
+  model on every reviewer spawn, with `fork_turns: "none"`;
+- names both models in the final report.
+
+### RED
+
+Baseline against commit `8156135`: FAIL. Nothing asks; every subagent
+inherits the session's model, and the report does not say which model ran.
+
+### GREEN
+
+PASS. Preflight opens with the question, the dispatch and review steps carry
+the chosen models, and the report lists them.

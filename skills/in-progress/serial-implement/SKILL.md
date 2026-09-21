@@ -27,6 +27,10 @@ Every turn resends the whole conversation, so a run costs turns times context si
 
 Nothing touches git until every check below passes. Any failed check ends the run with a message naming what failed.
 
+First, one question to the user: which model the implementer runs on, and which the reviewers run on. Offer the session's own model as the default for both. Keep both answers for the whole run: every implementer spawn passes the implementer model, every reviewer spawn the reviewer model (Codex: `model` on `spawn_agent`, accepted only with `fork_turns: "none"`; Claude Code: `model` on the Agent call, ignored by a fork). A name the harness rejects stops the run at that spawn with the harness error.
+
+Then the checks:
+
 1. Resolve the argument (identifier or URL) to the Parent issue with `get_issue`. Keep its identifier, team, and `gitBranchName`.
 2. List its Sub-issues: `list_issues` with `parentId` = the parent, `fields: ["id", "title", "status", "statusType", "labels", "createdAt"]`, `orderBy: "createdAt"`, default limit; follow `cursor` when a page is full. No Sub-issues: stop.
 3. Nested check, one call per Sub-issue: `list_issues` with `parentId` = that Sub-issue, `fields: ["id"]`, `limit: 1`. Any result means nested Sub-issues: stop.
@@ -40,7 +44,7 @@ Nothing touches git until every check below passes. Any failed check ends the ru
 7. `list_issue_statuses` for the team. `In Progress`, `In Review`, and `Done` must all exist by name. Any missing: stop.
 8. `git status --porcelain` must be empty. Otherwise ask the user whether to stash, commit, or abort. Never discard their changes.
 
-Done when the queue is ordered, every Sub-issue is classified, and the three states are resolved to ids.
+Done when both models are chosen, the queue is ordered, every Sub-issue is classified, and the three states are resolved to ids.
 
 ## 2. Branch
 
@@ -58,7 +62,7 @@ One Sub-issue at a time, in order. Dispatch nothing in parallel. Between Sub-iss
 1. Find `EXISTING`, every commit after the default branch whose subject contains `<ID>` as a standalone token, oldest first. Match non-alphanumeric boundaries, so both `(ASK-362)` and `ASK-362` match while `ASK-3620` does not. If any exist, `START` is the parent of the oldest one. Otherwise `START` is the current `HEAD`. Every review of this Sub-issue uses this same `START`.
 2. `list_comments` with `issueId` = the Sub-issue, `orderBy: "createdAt"`; the latest comment carrying `START` is the checkpoint. Restore its `START`, `REVIEWED_HEAD`, open ordinary findings, pending delivery-boundary findings, local evidence paths, action, and last user decision. A checkpoint `START` must equal the derived `START`; otherwise stop and report the mismatch.
 3. When the current state is `In Review` and `REVIEWED_HEAD` equals the current `HEAD`, dispatch no implementer and resume at its unresolved [ordinary escalation](#5-escalation) or [delivery-boundary escalation](#delivery-boundary-escalation). When there is no matching checkpoint or `HEAD` changed, go directly to [review](#4-review-one-sub-issue) from `START`.
-4. Otherwise apply the [turn budget](#context-budget), then `save_issue`: state `In Progress`. Record `DISPATCH_HEAD`, then spawn the implementer with no inherited context and [IMPLEMENTER-BRIEF.md](IMPLEMENTER-BRIEF.md) as its whole prompt, including `EXISTING` and `START`. Wait for it.
+4. Otherwise apply the [turn budget](#context-budget), then `save_issue`: state `In Progress`. Record `DISPATCH_HEAD`, then spawn the implementer with no inherited context, on the implementer model, with [IMPLEMENTER-BRIEF.md](IMPLEMENTER-BRIEF.md) as its whole prompt, including `EXISTING` and `START`. Wait for it.
 5. Act on its outcome:
    - **BLOCKED**: put the question to the user. Post question and answer as a comment on the Sub-issue. Send the answer to the same subagent (it keeps its context) and wait again.
    - **FAILED**: go to [Stopping](#stopping).
@@ -71,7 +75,7 @@ One Sub-issue at a time, in order. Dispatch nothing in parallel. Between Sub-iss
 ## 4. Review one Sub-issue
 
 1. `get_issue` and `list_comments` (`orderBy: "createdAt"`) on the Sub-issue, once per review; write title, description, and comments to a scratch file: that file is the spec, and the reviewers read it from disk.
-2. Call the Skill tool with "code-review": fixed point `START`, the scratch file as the spec. Its two reviewers start with no inherited context, like the implementer. Record the current `HEAD` as `REVIEWED_HEAD`.
+2. Call the Skill tool with "code-review": fixed point `START`, the scratch file as the spec. Its two reviewers start with no inherited context, on the reviewer model. Record the current `HEAD` as `REVIEWED_HEAD`.
 3. Classify findings. **Blocking**: every Spec-axis finding (missing, partial, or wrong requirement) and every breach of a documented repo standard. **Non-blocking**: smells and judgement calls. A blocking Spec finding is a **delivery-boundary finding** when its only completion requires pushing, opening or updating a pull request, or attaching an artifact to a remote pull request. This skill never performs those operations. Store every other finding in `OPEN_ORDINARY`.
 4. Add every delivery-boundary finding to `PENDING_DELIVERY`; never replace this set with a later review's output. Only an explicit Accept or Defer decision clears an entry. Every other finding is ordinary.
 5. Before a fix round, apply the [turn budget](#context-budget), then `save_comment` an Italian checkpoint containing `START`, `REVIEWED_HEAD`, current `HEAD`, `OPEN_ORDINARY`, `PENDING_DELIVERY`, local evidence paths, and action `Fix`. Send only `OPEN_ORDINARY`, blocking ones marked, to the current implementer. On a review-only resume with no current implementer, spawn one fresh implementer with the dispatch brief first. Never include `PENDING_DELIVERY` in a fix prompt. When there are no ordinary findings, skip the fix round. A **FAILED** fix goes to [Stopping](#stopping).
@@ -117,6 +121,7 @@ At the end, complete or stopped, tell the user:
 - every delivery-boundary finding, the user's decision, and all local evidence paths
 - the remaining queue, when stopped
 - the turn count, when the turn budget stopped the run
+- the models the implementer and the reviewers ran on
 
 The skill never pushes, never opens a PR, and never modifies the Parent issue. Suggest `/code-review main` on the whole branch before the PR.
 

@@ -1,6 +1,6 @@
 # Implementer brief
 
-Fill in the placeholders and send this as the subagent's prompt. Spawn it with no inherited context (on Codex, `fork_turns: "none"`): this prompt is everything it knows. Context pointers over copies: the implementer reads its ticket from Linear itself, so later comments on it are seen.
+Fill in the placeholders and send this as the subagent's prompt. Spawn it with no inherited context (on Codex, `fork_turns: "none"`), on the implementer model chosen at the start of the run: this prompt is everything it knows. Context pointers over copies: the implementer reads its ticket from Linear itself, so later comments on it are seen.
 
 ## Dispatch
 
