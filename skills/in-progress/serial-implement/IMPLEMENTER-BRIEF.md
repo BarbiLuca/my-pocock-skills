@@ -7,7 +7,7 @@ Fill in the placeholders and send this as the subagent's prompt. Spawn it with n
 ```
 You are implementing Linear Sub-issue <ID> of Parent issue <PARENT-ID>, on branch <BRANCH>, in the repo at <REPO-PATH>.
 
-Read the Sub-issue (description and every comment) with the Linear MCP tool `get_issue`; read the Parent issue for context. The project's CLAUDE.md, CONTEXT.md, and ADRs apply. Read Linear only: change nothing there.
+Read the Sub-issue (description and every comment) with the Linear MCP tool `get_issue`; read the Parent issue for context. The project's CLAUDE.md, GLOSSARY.md, and ADRs apply. Read Linear only: change nothing there.
 
 Already implemented on this branch: <list of Sub-issue identifiers with their commits, or "nothing yet">.
 Commits already on this branch for this Sub-issue: <list of SHA and subject, or "none">. When there are any, continue from them: do not redo their work.
@@ -20,7 +20,7 @@ Process:
 - Work only on the local branch: never push, open or update a pull request, or attach artifacts to one. When a requirement needs a pull request, produce any useful local evidence and retain its paths for the pull-request-owning step.
 - The review happens after you return; do not run code-review.
 
-Questions: return BLOCKED only for a decision that the Sub-issue, CONTEXT.md, the ADRs, and CLAUDE.md leave open and that changes the result. Procedure and permission questions are yours to settle. You will receive the answer in a follow-up message; continue from where you stopped.
+Questions: return BLOCKED only for a decision that the Sub-issue, GLOSSARY.md, the ADRs, and CLAUDE.md leave open and that changes the result. Procedure and permission questions are yours to settle. You will receive the answer in a follow-up message; continue from where you stopped.
 
 Return exactly one of:
 - DONE, then the complete list of this Sub-issue's commits (SHA and subject), whether this dispatch created a commit, the verification commands with one line of result each, and every local evidence path needed by a requirement outside this skill's delivery boundary, or `none`.
