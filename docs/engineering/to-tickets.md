@@ -4,7 +4,7 @@
 
 Every ticket is a **tracer bullet**: a narrow but complete path through every layer of the change (schema, API, UI, tests) that you can demo on its own as soon as it lands. This is what makes the skill different from the obvious way to split work, which is to cut one layer at a time and integrate at the end. It also sizes each ticket to fit in a single fresh [context window](https://www.aihero.dev/ai-coding-dictionary/context-window), because a [session](https://www.aihero.dev/ai-coding-dictionary/session) that has never seen your spec will pick the ticket up.
 
-The proposed breakdown and the resulting ticket titles, descriptions, and acceptance criteria are written in Italian, even from an English spec. This applies to local files and remote trackers; technical identifiers and tracker metadata such as `Blocked by`, `Status`, and `ready-for-agent` retain their original spelling.
+The proposed breakdown and the resulting ticket titles, descriptions, and acceptance criteria are written in Italian, even from an English spec. This applies to local files and remote trackers; technical identifiers and tracker metadata such as `Blocked by`, `Status`, `ready-for-agent`, and `ready-for-human` retain their original spelling.
 
 ## When to reach for it
 
@@ -18,7 +18,7 @@ You invoke this by typing `/to-tickets`. The [agent](https://www.aihero.dev/ai-c
 | Nothing is decided yet | [grill-with-docs](https://aihero.dev/skills-grill-with-docs), then [to-spec](https://aihero.dev/skills-to-spec) |
 | A [wayfinder](https://aihero.dev/skills-wayfinder) map has cleared | [to-spec](https://aihero.dev/skills-to-spec) first, to collapse the map, then `/to-tickets` |
 
-Tickets that `to-tickets` produced are agent-ready by construction. Don't run [triage](https://aihero.dev/skills-triage) over them. Triage is for work that arrived from someone else.
+Tickets that `to-tickets` produced already carry `ready-for-agent` or `ready-for-human`, chosen per ticket in the breakdown you approve. Don't run [triage](https://aihero.dev/skills-triage) over them. Triage is for work that arrived from someone else.
 
 ## Prerequisites
 
