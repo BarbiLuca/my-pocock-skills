@@ -12,7 +12,7 @@ The issue tracker and triage label vocabulary should have been provided to you. 
 
 ## Ticket language
 
-Write every ticket's title and body in Italian, including section headings, acceptance criteria, and the breakdown presented for approval, even when the plan or spec is in English. This applies to drafts and published issues, including local Markdown files. The English templates below define the structure; render their prose and headings in Italian. Preserve code, identifiers, URLs, exact quotations, technical terms, and the project's canonical domain vocabulary. Keep tracker labels and machine-readable field names and values unchanged, including `Blocked by`, `Status`, and `ready-for-agent` in the local tracker format.
+Write every ticket's title and body in Italian, including section headings, acceptance criteria, and the breakdown presented for approval, even when the plan or spec is in English. This applies to drafts and published issues, including local Markdown files. The English templates below define the structure; render their prose and headings in Italian. Preserve code, identifiers, URLs, exact quotations, technical terms, and the project's canonical domain vocabulary. Keep tracker labels and machine-readable field names and values unchanged, including `Blocked by`, `Status`, `ready-for-agent`, and `ready-for-human` in the local tracker format.
 
 ## Process
 
@@ -41,6 +41,8 @@ Break the work into **tracer bullet** tickets.
 
 Give each ticket its **blocking edges**: the other tickets that must complete before it can start. A ticket with no blockers can start immediately.
 
+Give each ticket a label: `ready-for-human` when it needs judgment calls, external access, design decisions, or manual testing; otherwise `ready-for-agent`.
+
 **Wide refactors are the exception to vertical slicing.** A **wide refactor** is one mechanical change (rename a column, retype a shared symbol) whose **blast radius** fans across the whole codebase, so a single edit breaks thousands of call sites at once and no vertical slice can land green. Don't force it into a tracer bullet; sequence it as **expand–contract**. First expand: add the new form beside the old so nothing breaks. Then migrate the call sites over in batches sized by blast radius (per package, per directory), each batch its own ticket blocked by the expand, keeping CI green batch to batch because the old form still exists. Finally contract: delete the old form once no caller remains, in a ticket blocked by every migrate batch. When even the batches can't stay green alone, keep the sequence but let them share an integration branch that all block a final integrate-and-verify ticket; green is promised only there.
 
 ### 4. Quiz the user
@@ -50,11 +52,13 @@ Present the proposed breakdown as a numbered list. For each ticket, show:
 - **Title**: short descriptive name
 - **Blocked by**: which other tickets (if any) must complete first
 - **What it delivers**: the end-to-end behaviour this ticket makes work
+- **Label**: `ready-for-agent` or `ready-for-human`, with a one-line reason
 
 Ask the user:
 
 - Does the granularity feel right? (too coarse / too fine)
 - Are the blocking edges correct: does each ticket only depend on tickets that genuinely gate it?
+- Is each ticket's label right?
 - Should any tickets be merged or split further?
 
 Iterate until the user approves the breakdown.
@@ -64,11 +68,11 @@ Iterate until the user approves the breakdown.
 Publish the approved tickets. **How** depends on the tracker `/setup-matt-pocock-skills` configured; the tickets are the same either way, only the shape of the blocking edges changes:
 
 - **Local files** → write one file per ticket under `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01` in dependency order (blockers first). Each file's "Blocked by" lists the numbers/titles it depends on. Use the per-ticket file template below: one ticket per file, never a single combined file.
-- **A real issue tracker (GitHub, Linear, …)** → publish one issue per ticket in dependency order (blockers first) so each ticket's blocking edges can reference real identifiers. Use the platform's native blocking relationship where it has one; otherwise set each ticket's "Blocked by" to the blocking issues. If the source was an existing issue, make each ticket its sub-issue (tracker doc's operation). Apply the `ready-for-agent` triage label unless instructed otherwise; the tickets are agent-grabbable by construction.
+- **A real issue tracker (GitHub, Linear, …)** → publish one issue per ticket in dependency order (blockers first) so each ticket's blocking edges can reference real identifiers. Use the platform's native blocking relationship where it has one; otherwise set each ticket's "Blocked by" to the blocking issues. If the source was an existing issue, make each ticket its sub-issue (tracker doc's operation). Apply each ticket's label as approved in the breakdown.
 
 Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
 
-Do NOT close or modify any parent issue.
+Do NOT close or modify any parent issue. One exception: once all the child tickets exist, remove the `to-tickets` label from the parent issue. Leave it open and change nothing else.
 
 <local-ticket-template>
 
@@ -78,7 +82,7 @@ Do NOT close or modify any parent issue.
 
 **Blocked by:** the numbers/titles of the tickets that gate this one, or "None (can start immediately)".
 
-**Status:** ready-for-agent
+**Status:** `ready-for-agent` or `ready-for-human`, as approved in the breakdown
 
 - [ ] Acceptance criterion 1
 - [ ] Acceptance criterion 2

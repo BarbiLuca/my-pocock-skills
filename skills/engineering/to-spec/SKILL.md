@@ -20,7 +20,9 @@ Write the spec issue's title and body in Italian, including section headings, us
 
 Check with the user that these seams match their expectations.
 
-3. Write the spec using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
+3. Write the spec using the template below, then publish it to the project issue tracker. Apply the `to-tickets` label: a spec is not implementable work, so `/to-tickets` must split it first.
+
+If the user passes a reference to an existing issue labelled `to-spec`, fetch it, write the spec as that issue's body instead of creating a new one, and replace its `to-spec` label with `to-tickets`.
 
 <spec-template>
 
