@@ -12,7 +12,7 @@ Before stating what a skill does or recommending a step be skipped, read that sk
 
 A **flow** is a path through the skills. Most paths run along one **main flow**, and two **on-ramps** merge onto it. Everything else is standalone, or a vocabulary layer that runs underneath.
 
-`/to-spec`, `/to-tickets`, and `/wayfinder` produce ticket content in Italian; `/triage` writes its briefs and comments in Italian too. This covers local Markdown and remote trackers, while preserving technical identifiers and tracker metadata.
+`/to-spec`, `/to-tickets`, and `/wayfinder` produce ticket content in Italian; `/triage` writes its briefs and comments in Italian too. `/implement`, `/tdd`, and `/code-review` talk to the user in Italian, while code, identifiers, and commit messages stay in English. This covers local Markdown and remote trackers, while preserving technical identifiers and tracker metadata.
 
 ## The main flow: idea → ship
 

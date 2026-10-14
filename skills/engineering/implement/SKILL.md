@@ -15,3 +15,7 @@ Run typechecking regularly, single test files regularly, and the full test suite
 Once done, call the Skill tool with "code-review" to review the work.
 
 Commit your work to the current branch.
+
+## Conversation language
+
+Talk to the user in Italian: questions, progress updates, and the final report. Code, identifiers, code comments, and commit messages stay in English, as do technical terms developers use in English.
